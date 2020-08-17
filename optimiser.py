@@ -1,4 +1,4 @@
-from mip import Model, xsum, maximize, BINARY
+import mip
 import pandas as pd
 
 
@@ -25,63 +25,63 @@ def optimise(budget=100, teamsize=11, GK=None, DEF=None, MID=None, FWD=None, in_
     df = pd.read_csv('players_data.csv')
     I = range(len(df))
 
-    model = Model()
+    model = mip.Model()
 
     # add a binary value to the model for each player that defines if they are picked - 1 for in, 0 for out
-    x = [model.add_var(var_type=BINARY) for i in I]
+    x = [model.add_var(var_type=mip.BINARY) for i in I]
 
     # add objective function - points scored
-    model.objective = maximize(xsum(df.points[i] * x[i] for i in I))
+    model.objective = mip.maximize(mip.xsum(df.points[i] * x[i] for i in I))
 
     # add budget constraint
-    model += xsum(df.cost[i] * x[i] for i in I) <= budget
+    model += mip.xsum(df.cost[i] * x[i] for i in I) <= budget
 
     # add teamsize contraint
-    model += xsum(x[i] for i in I) == teamsize
+    model += mip.xsum(x[i] for i in I) == teamsize
 
     # add constraint of min/max number of players from each position
     if GK:
-        model += xsum(x[i] for i in I if df.pos[i] == "G") == GK
+        model += mip.xsum(x[i] for i in I if df.pos[i] == "G") == GK
     else:
-        model += xsum(x[i] for i in I if df.pos[i] == "G") >= rules["min_gks"]
-        model += xsum(x[i] for i in I if df.pos[i] == "G") <= rules["max_gks"]
+        model += mip.xsum(x[i] for i in I if df.pos[i] == "G") >= rules["min_gks"]
+        model += mip.xsum(x[i] for i in I if df.pos[i] == "G") <= rules["max_gks"]
 
     if DEF:
-        model += xsum(x[i] for i in I if df.pos[i] == "D") == DEF
+        model += mip.xsum(x[i] for i in I if df.pos[i] == "D") == DEF
     else:
-        model += xsum(x[i] for i in I if df.pos[i] == "D") >= rules["min_defs"]
-        model += xsum(x[i] for i in I if df.pos[i] == "D") <= rules["max_defs"]
+        model += mip.xsum(x[i] for i in I if df.pos[i] == "D") >= rules["min_defs"]
+        model += mip.xsum(x[i] for i in I if df.pos[i] == "D") <= rules["max_defs"]
 
     if MID:
-        model += xsum(x[i] for i in I if df.pos[i] == "M") == MID
+        model += mip.xsum(x[i] for i in I if df.pos[i] == "M") == MID
     else:
-        model += xsum(x[i] for i in I if df.pos[i] == "M") >= rules["min_mids"]
-        model += xsum(x[i] for i in I if df.pos[i] == "M") <= rules["max_mids"]
+        model += mip.xsum(x[i] for i in I if df.pos[i] == "M") >= rules["min_mids"]
+        model += mip.xsum(x[i] for i in I if df.pos[i] == "M") <= rules["max_mids"]
 
     if FWD:
-        model += xsum(x[i] for i in I if df.pos[i] == "F") == FWD
+        model += mip.xsum(x[i] for i in I if df.pos[i] == "F") == FWD
     else:
-        model += xsum(x[i] for i in I if df.pos[i] == "F") >= rules["min_fwds"]
-        model += xsum(x[i] for i in I if df.pos[i] == "F") <= rules["max_fwds"]
+        model += mip.xsum(x[i] for i in I if df.pos[i] == "F") >= rules["min_fwds"]
+        model += mip.xsum(x[i] for i in I if df.pos[i] == "F") <= rules["max_fwds"]
 
     # add constraint of maximum number of players from each team
     for team in df.team.unique():
-        model += xsum(x[i] for i in I if df.team[i] == team) <= max_from_team
+        model += mip.xsum(x[i] for i in I if df.team[i] == team) <= max_from_team
 
     # add constraints so that players in in_team must be in the optimised lineup and players in out_team must not be in the optimised lineup.
     # note that using a player's name might run into problems if the name is shared by more than one player,
     # so using a player's ID in in_team and out_team is also allowed.
     for player in in_team:
         if isinstance(player, str):
-            model += xsum(x[i] for i in I if df.name[i] == player) == 1
+            model += mip.xsum(x[i] for i in I if df.name[i] == player) == 1
         elif isinstance(player, int):
-            model += xsum(x[i] for i in I if df.id[i] == player) == 1
+            model += mip.xsum(x[i] for i in I if df.id[i] == player) == 1
 
     for player in out_team:
         if isinstance(player, str):
-            model += xsum(x[i] for i in I if df.name[i] == player) == 0
+            model += mip.xsum(x[i] for i in I if df.name[i] == player) == 0
         elif isinstance(player, int):
-            model += xsum(x[i] for i in I if df.id[i] == player) == 0
+            model += mip.xsum(x[i] for i in I if df.id[i] == player) == 0
 
     model.optimize()
 
@@ -99,9 +99,10 @@ def optimise(budget=100, teamsize=11, GK=None, DEF=None, MID=None, FWD=None, in_
 
 
 # example:
-optimise(budget=80,
+optimise(budget=81,
          teamsize=11,
          in_team=["Salah", "Vinagre", 259],
          out_team=["Lundstram", 1],
-         GK=1
+         GK=1,
+         MID=4
          )
