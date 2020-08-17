@@ -11,7 +11,7 @@ async def fetch(session, url):
 
 
 def team_converter(team_id):
-    """Converts a team's ID to their actual name."""
+    '''Converts a team's ID to their actual name'''
     team_map = {
         1: "Arsenal",
         2: "Aston Villa",
@@ -39,7 +39,7 @@ def team_converter(team_id):
 
 
 def position_converter(position):
-    """Converts a player's `element_type` to their actual position."""
+    '''Converts a player's element_type to their actual position'''
     position_map = {
         1: "Goalkeeper",
         2: "Defender",
@@ -53,12 +53,21 @@ async def main():
     async with aiohttp.ClientSession() as session:
         all_data = await fetch(session, "https://fantasy.premierleague.com/api/bootstrap-static/")
     players = all_data["elements"]
-    important_data = [[x["id"], team_converter(x["team"]), position_converter(x["element_type"])[0], x["web_name"],
-                       x["now_cost"] / 10, x["total_points"]] for x in players]
+
+    important_data = [
+        [
+            x["id"],
+            team_converter(x["team"]),
+            position_converter(x["element_type"])[0],
+            x["web_name"],
+            x["now_cost"] / 10,
+            x["total_points"]
+        ]
+        for x in players
+    ]
 
     with open("players_data.csv", "w", encoding="utf-8", newline="") as out:
         headers = ["id", "team", "pos", "name", "cost", "points"]
-
         writer = csv.writer(out)
         writer.writerow(headers)
         writer.writerows(important_data)
