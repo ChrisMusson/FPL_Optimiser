@@ -2,8 +2,9 @@ import mip
 import pandas as pd
 
 
-def optimise(budget=100, teamsize=11, GK=None, DEF=None, MID=None, FWD=None, in_team=[], out_team=[], max_from_team=3):
+def optimise(filepath="players_data.csv", budget=100, teamsize=15, GK=None, DEF=None, MID=None, FWD=None, in_team=[], out_team=[], max_from_team=3):
     '''
+    :param filepath - str: the filepath that points to the csv that contains the data you want to optimise
     :param budget - int or float: the maximum sum of costs allowed in the optimised lineup
     :param teamsize - int: the number of players to include in the optimised lineup
     :param GK, DEF, MID, FWD - int: the number of players of this position to include in the optimised lineup
@@ -22,7 +23,7 @@ def optimise(budget=100, teamsize=11, GK=None, DEF=None, MID=None, FWD=None, in_
         "min_fwds": 1,
         "max_fwds": 3
     }
-    df = pd.read_csv('players_data.csv')
+    df = pd.read_csv(filepath)
     I = range(len(df))
 
     model = mip.Model()
