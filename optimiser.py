@@ -73,13 +73,13 @@ def optimise(budget=100, teamsize=11, GK=None, DEF=None, MID=None, FWD=None, in_
     # so using a player's ID in in_team and out_team is also allowed.
     for player in in_team:
         if isinstance(player, str):
-            model += mip.xsum(x[i] for i in I if df.name[i] == player) == 1
+            model += mip.xsum(x[i] for i in I if df.name[i].lower() == player.lower()) == 1
         elif isinstance(player, int):
             model += mip.xsum(x[i] for i in I if df.id[i] == player) == 1
 
     for player in out_team:
         if isinstance(player, str):
-            model += mip.xsum(x[i] for i in I if df.name[i] == player) == 0
+            model += mip.xsum(x[i] for i in I if df.name[i].lower() == player.lower()) == 0
         elif isinstance(player, int):
             model += mip.xsum(x[i] for i in I if df.id[i] == player) == 0
 
