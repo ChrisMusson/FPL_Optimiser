@@ -1,13 +1,6 @@
-import aiohttp
-import asyncio
-import csv
-
-
-async def fetch(session, url):
-    headers = {"User-Agent": ""}
-    async with session.get(url, headers=headers) as response:
-        assert response.status == 200
-        return await response.json()
+from urllib.request import urlopen
+from json import loads
+from csv import writer
 
 
 def team_converter(team_id):
@@ -49,9 +42,8 @@ def position_converter(position):
     return position_map[position]
 
 
-async def main():
-    async with aiohttp.ClientSession() as session:
-        all_data = await fetch(session, "https://fantasy.premierleague.com/api/bootstrap-static/")
+def main():
+    all_data = loads(urlopen("https://fantasy.premierleague.com/api/bootstrap-static/").read())
     players = all_data["elements"]
 
     important_data = [
@@ -68,10 +60,9 @@ async def main():
 
     with open("players_data.csv", "w", encoding="utf-8", newline="") as out:
         headers = ["id", "team", "pos", "name", "cost", "points"]
-        writer = csv.writer(out)
-        writer.writerow(headers)
-        writer.writerows(important_data)
+        w = writer(out)
+        w.writerow(headers)
+        w.writerows(important_data)
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    main()
