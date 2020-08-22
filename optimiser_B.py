@@ -145,7 +145,7 @@ def optimise(filepath="players_data.csv",
     result = result.reset_index(drop=True)
     result.index += 1
 
-    print(result.loc[:, ["id", "team", "pos", "name", "cost", "points"]])
+    print(result.loc[:, ["id", "team", "pos", "name", "cost", col_to_max]])
     print(f"\nTotal cost: £{result.cost.sum()}m")
     print(f"Total points: {round(start.points.sum(), 2)} (+{round(bench.points.sum(), 2)} on the bench)\n")
 
