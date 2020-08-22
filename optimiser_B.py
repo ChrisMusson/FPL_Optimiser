@@ -4,6 +4,7 @@ import unicodedata
 
 
 def optimise(filepath="players_data.csv",
+             col_to_max="points",
              budget=100,
              DEF=None,
              MID=None,
@@ -17,6 +18,7 @@ def optimise(filepath="players_data.csv",
              ):
     '''
     :param filepath - str: the filepath that points to the csv that contains the data you want to optimise
+    :param col_to_max - str: the name of the column in the csv that will be maximised
     :param budget - int or float: the maximum sum of costs allowed in the optimised 15 man squad
     :param DEF, MID, FWD - int: the number of players of this position to be included in starting 11 of the optimised 15 man squad
     :param bench_strength - float: a number between 0 and 1 inclusive that denotes how much to take the bench into account when optimising the squad
@@ -121,8 +123,8 @@ def optimise(filepath="players_data.csv",
     assert(0 <= bench_strength <= 1), "that is not a valid value for bench strength"
     
     model.objective = maximize(
-        (1 - bench_strength) * xsum(df.points[i] * y[i] for i in I) +
-        bench_strength * (xsum(df.points[i] * x[i] for i in I) - xsum(df.points[i] * y[i] for i in I))
+        (1 - bench_strength) * xsum(df[col_to_max][i] * y[i] for i in I) +
+        bench_strength * (xsum(df[col_to_max][i] * x[i] for i in I) - xsum(df[col_to_max][i] * y[i] for i in I))
     )
 
     model.optimize()
@@ -143,9 +145,9 @@ def optimise(filepath="players_data.csv",
     result = result.reset_index(drop=True)
     result.index += 1
 
-    print(result)
+    print(result.loc[:, ["id", "team", "pos", "name", "cost", "points"]])
     print(f"\nTotal cost: £{result.cost.sum()}m")
-    print(f"Total points: {start.points.sum()} (+{bench.points.sum()} on the bench)\n")
+    print(f"Total points: {round(start.points.sum(), 2)} (+{round(bench.points.sum(), 2)} on the bench)\n")
 
 
 optimise(
