@@ -1,3 +1,6 @@
 .venv/
 .vscode/
+19-20/
 players_data.csv
+players_data_w_fixtures.csv
+incorporate_fixture_diff.py
