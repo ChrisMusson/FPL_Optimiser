@@ -6,6 +6,8 @@ In optimiser_A, you can specify the teamsize and the optimiser will attempt to m
 
 In optimiser_B, the teamsize is always 15, however you can specify a bench_strength that signifies what importance should be given to points on the bench. The optimiser maximises x*(starting 11 points) + (1-x)*(bench points). In the returned dataframe, the first 11 players are the optimised lineup's 11 starting players.
 
+**NOTE: This optimiser will only be as good as the data supplied to it - using last seasons's points scored is unlikely to be predictive of how many points players will score this season. If you want to use this to select a team, then it is highly recommended that you alter the points column in players_data.csv to something that is more predictive, such as week-on-week expected points.** 
+
 ## Usage
 1. Clone this repository - `git clone "https://github.com/ChrisMusson/FPL_Optimiser"`
 2. Install requirements from txt file - `pip install -r requirements.txt`
