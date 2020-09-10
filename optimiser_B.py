@@ -3,23 +3,27 @@ import pandas as pd
 import unicodedata
 
 
-def optimise(filepath="players_data.csv",
-             col_to_max="points",
-             budget=100,
-             DEF=None,
-             MID=None,
-             FWD=None,
-             bench_strength=0.1,
-             in_team=[],
-             starting=[],
-             on_bench=[],
-             out_team=[],
-             banned_teams=[]
-             ):
-    '''
+def optimise(
+    filepath="players_data.csv",
+    col_to_max="points",
+    budget=100,
+    captain=True,
+    DEF=None,
+    MID=None,
+    FWD=None,
+    bench_strength=0.1,
+    in_team=[],
+    starting=[],
+    on_bench=[],
+    out_team=[],
+    banned_teams=[],
+    max_from_team=3,
+):
+    """
     :param filepath - str: the filepath that points to the csv that contains the data you want to optimise
     :param col_to_max - str: the name of the column in the csv that will be maximised
     :param budget - int or float: the maximum sum of costs allowed in the optimised 15 man squad
+    :param captain - bool: denotes whether to consider that the captain's points get doubled when calculating the optimised 15 man squad
     :param DEF, MID, FWD - int: the number of players of this position to be included in starting 11 of the optimised 15 man squad
     :param bench_strength - float: a number between 0 and 1 inclusive that denotes how much to take the bench into account when optimising the squad
     :param in_team - list<int or str>: list of players that must be included in the optimised 15 man squad
@@ -27,16 +31,18 @@ def optimise(filepath="players_data.csv",
     :param on_bench - list<int or str>: list of players who must be in the 15 man squad but must not be included in the first 11
     :param out_team - list<int or str>: list of players that must not be included in the optimised 15 man squad
     :param banned_teams - list<str>: list of clubs for whom no players in the optimised 15 man squad can play
+    :param max_from_team - int: maximum number of players allowed from a single team
 
-    '''
+    """
 
     def remove_accents(input_str):
-        '''a function that removes all diacritics from latin characters'''
-        nfkd_form = unicodedata.normalize('NFKD', input_str)
-        return u"".join([c for c in nfkd_form if not unicodedata.combining(c)])
-    
+        """a function that removes all diacritics from latin characters"""
+        nfkd_form = unicodedata.normalize("NFKD", input_str)
+        return "".join([c for c in nfkd_form if not unicodedata.combining(c)])
+
     df = pd.read_csv(filepath)
-    names = df.name.str.lower().apply(remove_accents).copy()
+    df.points = df.points / 1000
+    names = df.name.str.lower().apply(remove_accents)
     I = range(len(df))
     model = Model()
 
@@ -53,6 +59,13 @@ def optimise(filepath="players_data.csv",
     for i in I:
         model += x[i] >= y[i]
 
+    # add constraints for the captain if necessary
+    z = [model.add_var(var_type=BINARY) for i in I]
+    if captain:
+        model += xsum(z[i] for i in I) == 1
+        for i in I:
+            model += y[i] >= z[i]
+
     # add constraint of maximum number of players from each team, teams being case insensitive
     banned_teams = [x.lower() for x in banned_teams]
     for team in df.team.unique():
@@ -60,7 +73,9 @@ def optimise(filepath="players_data.csv",
         if team in banned_teams:
             model += xsum(x[i] for i in I if df.team[i].lower() == team) == 0
         else:
-            model += xsum(x[i] for i in I if df.team[i].lower() == team) <= 3
+            model += (
+                xsum(x[i] for i in I if df.team[i].lower() == team) <= max_from_team
+            )
 
     # dict containing min/max num of players by position
     rules = {
@@ -73,12 +88,18 @@ def optimise(filepath="players_data.csv",
     model += xsum(x[i] for i in I if df.pos[i] == "G") == 2
     model += xsum(y[i] for i in I if df.pos[i] == "G") == 1
     for pos in ["DEF", "MID", "FWD"]:
-        model += xsum(x[i]for i in I if df.pos[i] == pos[0]) == rules[pos][1]
+        model += xsum(x[i] for i in I if df.pos[i] == pos[0]) == rules[pos][1]
         if eval(pos):
-            assert(rules[pos][0] <= eval(pos) <= rules[pos][1]), f"That is not a valid value for {pos}"
-            model += xsum(y[i]for i in I if df.pos[i] == pos[0]) == eval(pos)
+            assert (
+                rules[pos][0] <= eval(pos) <= rules[pos][1]
+            ), f"That is not a valid value for {pos}"
+            model += xsum(y[i] for i in I if df.pos[i] == pos[0]) == eval(pos)
         else:
-            model += rules[pos][0] <= xsum(y[i] for i in I if df.pos[i] == pos[0]) <= rules[pos][1]
+            model += (
+                rules[pos][0]
+                <= xsum(y[i] for i in I if df.pos[i] == pos[0])
+                <= rules[pos][1]
+            )
 
     # add budget constraint
     model += xsum(df.cost[i] * x[i] for i in I) <= budget
@@ -118,13 +139,18 @@ def optimise(filepath="players_data.csv",
         elif isinstance(player, int):
             model += xsum(x[i] for i in I if df.id[i] == player) == 0
 
-    # add objective function - points scored by starting 11 + points scored by the bench, 
+    # add objective function - points scored by starting 11 + points scored by the bench,
     # with the weight of each term defined by the user in bench_strength
-    assert(0 <= bench_strength <= 1), "that is not a valid value for bench strength"
-    
+    assert 0 <= bench_strength <= 1, "that is not a valid value for bench strength"
+
     model.objective = maximize(
-        (1 - bench_strength) * xsum(df[col_to_max][i] * y[i] for i in I) +
-        bench_strength * (xsum(df[col_to_max][i] * x[i] for i in I) - xsum(df[col_to_max][i] * y[i] for i in I))
+        (1 - bench_strength) * xsum(df[col_to_max][i] * y[i] for i in I)
+        + bench_strength
+        * (
+            xsum(df[col_to_max][i] * x[i] for i in I)
+            - xsum(df[col_to_max][i] * y[i] for i in I)
+        )
+        + (1 - bench_strength) * xsum(df[col_to_max][i] * z[i] for i in I) * captain
     )
 
     model.optimize()
@@ -141,18 +167,26 @@ def optimise(filepath="players_data.csv",
     bench.pos = pd.Categorical(bench.pos, categories=["G", "D", "M", "F"])
     bench = bench.sort_values(by=["pos", "points"], ascending=[True, False])
 
+    if captain:
+        captain_i = [i for i in I if z[i].x == 1][0]
+        start.loc[captain_i, "name"] += " (c)"
+        start.loc[captain_i, "points"] *= 2
+
     result = pd.concat([start, bench])
     result = result.reset_index(drop=True)
     result.index += 1
 
     print(result.loc[:, ["id", "team", "pos", "name", "cost", col_to_max]])
     print(f"\nTotal cost: £{result.cost.sum()}m")
-    print(f"Total points: {round(start.points.sum(), 2)} (+{round(bench.points.sum(), 2)} on the bench)\n")
+    print(
+        f"Total points: {start.points.sum():.2f} (+{bench.points.sum():.2f} on the bench)\n"
+    )
 
 
 optimise(
-    DEF=4,
-    in_team=["van Dijk", "vinagre", "jimenez"],
-    out_team=["Lundstram"],
-    banned_teams=["Burnley", "Aston Villa", "Man Utd"]
+    filepath="fplreview_1-5.csv",
+    # DEF=4,
+    # in_team=["van Dijk", "vinagre", "jimenez"],
+    # out_team=["Lundstram"],
+    # banned_teams=["Burnley", "Aston Villa", "Man Utd"],
 )
