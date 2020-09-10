@@ -1,6 +1,9 @@
 ## FPL Lineup Optimizer
 These Fantasy Premier League lineup optimisers optimise a lineup based on some constraints and a given objective. It currently uses the 2020/2021 season's player prices and the 2019/2020 season's points scored, and maximises the total points of all players in a lineup while staying within a specified budget and conforming to other FPL rules and constraints defined by the user.
 
+## With Transfers
+The `with_transfers/` folder contains instructions on how to get gameweek by gameweek data, and contains an optimiser that optimises points scored over these gameweeks, while allowing for one transfer per week. This optimiser is an extended version of `optimiser_B.py`, and contains many of the same parameters.
+
 ## Difference Between optimiser_A and optimiser_B
 In optimiser_A, you can specify the teamsize and the optimiser will attempt to maximise points for all players.  
 
