@@ -1,4 +1,4 @@
-This optimiser takes week-by-week expected points values and maximises the total expected points subject to all the usual FPL constraints, allowing for one transfer per gameweek. As in the other optimisers, all function parameters can be found in the `optimise()` function's docstring. 
+This optimiser takes week-by-week expected points values and maximises the total expected points subject to all the usual FPL constraints, allowing for up to 2 transfers per gameweek, but never allowing for hits. As in the other optimisers, all function parameters can be found in the `optimise()` function's docstring. 
 
 The `optimise()` function requires a csv file with headers `[id, team, pos, name, cost]` along with `n_pts` for every gameweek you want to optimise for. 
 
@@ -17,7 +17,7 @@ Please know that this optimisation is computationally very hard (I will try and 
 
 One way to make it run quicker is supplying players to `in_team` and `out_team`, as that will reduce the solution space. So if there are some players who are 100% in your team, then you may as well add them to `in_team`.
 
-The optimiser currently only allows up to 1 transfer per gameweek. I know that this is not perfect, but I believe that giving the optimiser the ability to take hits / bank transfers would make the solution space too large to be feasible. I will however look at seeing if it could work, but again, no promises.
+The optimiser currently only allows up to 2 transfers per gameweek and doesn't allow taking hits. I know that this is not perfect, but I believe that giving the optimiser the ability to take hits could make the solution space too large to be feasible. I will however look at seeing if it could work, but again, no promises.
 
 The optimiser also doesn't account for any price changes, so there could easily be a situation where the optimiser's plan in a future gameweek will no longer work.
 
