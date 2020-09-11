@@ -11,6 +11,7 @@ def optimise(
     in_team=[],
     out_team=[],
     bench_strength=0.1,
+    future_gw_multiplier=1,
     max_from_team=3,
 ):
     """
@@ -21,6 +22,8 @@ def optimise(
     :param in_team - list<int or str>: list of players that must be included in the optimised 15 man squad for every gameweek
     :param out_team - list<int or str>: list of players that must never be included in the optimised 15 man squad
     :param bench_strength - float: a number between 0 and 1 inclusive that denotes how much to take the bench into account when optimising the squad
+    :param future_gw_multiplier - float: a number between 0 and 1 inclusive that denotes how much importance to give to future gameweeks
+        i.e. gw1 has multiplier x**0 = 1, gw2 has multiplier x**1 = x, gw3 has multiplier x**2, etc. Lower number = more emphasis on closer gws
     :param max_from_team - int: maximum number of players allowed from a single team
     """
 
@@ -167,28 +170,34 @@ def optimise(
         for gw in range(num_gameweeks):
             model += x[gw][ind[0]] == 1
 
-    # add constraint that says that a maximum of 1 transfer can be made between gameweeks
+    # add constraint that says that a maximum of 2 transfers can be made between gameweeks
     # TODO: remove this constraint and take it into account in the objective function instead
     for a in range(num_gameweeks - 1):
         both.append([model.add_var(var_type=BINARY) for i in I])
-        model += xsum(both[a][i] for i in I) >= 14
+        model += xsum(both[a][i] for i in I) >= 13
         for i in I:
             model += x[a][i] >= both[a][i]
             model += x[a + 1][i] >= both[a][i]
+
+        # maximum of n transfers after n gameweeks
+        model += xsum(15 - xsum(both[k][i] for i in I) for k in range(a + 1)) <= a + 1
 
     # add the objective function
     model.objective = maximize(
         xsum(
             [
-                (1 - bench_strength)
+                future_gw_multiplier ** j
                 * (
-                    xsum(df[f"{start_gw + j}_pts"][i] * y[j][i] for i in I)
-                    + xsum(df[f"{start_gw + j}_pts"][i] * z[j][i] for i in I)
-                )
-                + bench_strength
-                * (
-                    xsum(df[f"{start_gw + j}_pts"][i] * x[j][i] for i in I)
-                    - xsum(df[f"{start_gw + j}_pts"][i] * y[j][i] for i in I)
+                    (1 - bench_strength)
+                    * (
+                        xsum(df[f"{start_gw + j}_pts"][i] * y[j][i] for i in I)
+                        + xsum(df[f"{start_gw + j}_pts"][i] * z[j][i] for i in I)
+                    )
+                    + bench_strength
+                    * (
+                        xsum(df[f"{start_gw + j}_pts"][i] * x[j][i] for i in I)
+                        - xsum(df[f"{start_gw + j}_pts"][i] * y[j][i] for i in I)
+                    )
                 )
                 for j in range(num_gameweeks)
             ]
@@ -198,7 +207,7 @@ def optimise(
     # find an optimal solution and print it
     model.optimize()
     print_dfs()
-    
+
 
 optimise(
     start_gw=1,
