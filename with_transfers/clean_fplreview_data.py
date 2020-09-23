@@ -11,4 +11,4 @@ df.dropna(inplace=True)
 cols = [f"{i}_pts" for i in range(int(start_gw), int(end_gw) + 1)]
 df = df.loc[:, ["id", "team", "pos", "name", "buy_cost", "sale_value"] + cols]
 
-df.to_csv("cleaned_data.csv", index=False)
+df.to_csv("cleaned_data.csv", float_format="%.3f", index=False)
