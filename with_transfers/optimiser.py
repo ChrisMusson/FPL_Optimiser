@@ -49,12 +49,12 @@ def optimise(
         t_out = df.iloc[[i for i in I if x[0][i].x == 0 and i + 1 in current_team_IDs]]
         print("CURRENT SQUAD")
         print(
-                current.loc[
-                    :,
-                    ["id", "team", "pos", "name", "sale_value"]
-                    + [f"{next_gw+x}_pts" for x in range(num_gws)],
-                ]
-            )
+            current.loc[
+                :,
+                ["id", "team", "pos", "name", "sale_value"]
+                + [f"{next_gw+x}_pts" for x in range(num_gws)],
+            ]
+        )
         print("\n")
         if len(t_out) > 0:
             [print(f"OUT: {t_out.name.iloc[j]}") for j in range(len(t_out))]
@@ -101,7 +101,7 @@ def optimise(
                     + [f"{next_gw+x}_pts" for x in range(num_gws)],
                 ]
             )
-            print(f"\nCost: £{result.sale_value.sum()}m")
+            print(f"\nCost: £{result.sale_value.sum():.1f}m")
             print(
                 f"Points: {starting[f'{next_gw + gw}_pts'].sum():.2f} (+{bench[f'{next_gw + gw}_pts'].sum():.2f} on the bench)\n\n"
             )
@@ -132,6 +132,14 @@ def optimise(
     current_team_url = f"https://fantasy.premierleague.com/api/entry/{user_id}/event/{next_gw-1}/picks/"
     current_team_data = json.loads(urlopen(current_team_url).read().decode("utf-8"))
     current_team_IDs = [x["element"] for x in current_team_data["picks"]]
+
+    # # you can use this to alter your current squad if you have already made transfers in the current gameweek.
+    # # don't forget to alter `free_transfers` to take this in to consideration
+    # transfers_out=[4, 338]
+    # transfers_in=[272, 469]
+    # replacements = dict(zip(transfers_out, transfers_in))
+    # current_team_IDs[:] = [replacements.get(x, x) for x in current_team_IDs]
+    
     in_the_bank = current_team_data["entry_history"]["bank"] / 10
 
     df = pd.read_csv(filepath)
@@ -211,14 +219,11 @@ def optimise(
         for gw in range(num_gws):
             model += x[gw][ind[0]] == 1
 
+    # ensure current squad is at most `free_transfers` players different from the first optimised squad
     if not wildcard:
-        model += (
-            xsum(
-                x[0][i] * [1 if i + 1 in current_team_IDs else 0 for i in I][i]
-                for i in I
-            )
-            >= 15 - free_transfers
-        )
+        model += xsum(
+            x[0][i] * [1 if i + 1 in current_team_IDs else 0 for i in I][i] for i in I
+        ) >= (15 - free_transfers)
 
     # add constraint that says that a maximum of 2 transfers can be made between gameweeks
     # TODO: remove this constraint and take it into account in the objective function instead
@@ -229,10 +234,15 @@ def optimise(
             model += x[a][i] >= both[a][i]
             model += x[a + 1][i] >= both[a][i]
 
-        # maximum of n transfers after n gameweeks
+        # maximum of n+`free_transfers` transfers n gameweeks in the future
         model += (
             xsum(15 - xsum(both[k][i] for i in I) for k in range(a + 1))
-            <= a + free_transfers
+            + 15
+            - xsum(
+                x[0][i] * [1 if i + 1 in current_team_IDs else 0 for i in I][i]
+                for i in I
+            )
+            <= a + free_transfers + 1
         )
 
     # add the objective function
