@@ -64,7 +64,8 @@ def optimise(
             assert(rules[pos][0] <= eval(pos) <= rules[pos][1]), f"That is not a valid value for {pos}"
             model += xsum(x[i]for i in I if df.pos[i] == pos[0]) == eval(pos)
         else:
-            model += rules[pos][0] <= xsum(x[i] for i in I if df.pos[i] == pos[0]) <= rules[pos][1]
+            model += rules[pos][0] <= xsum(x[i] for i in I if df.pos[i] == pos[0]) 
+            model += xsum(x[i] for i in I if df.pos[i] == pos[0]) <= rules[pos][1]
 
     # add constraint of maximum number of players from each team, teams being case insensitive
     banned_teams = [x.lower() for x in banned_teams]
@@ -109,10 +110,6 @@ def optimise(
 
 # example:
 optimise(
-    budget=81,
-    teamsize=11,
-    in_team=["Salah", "Vinagre", 259],
-    out_team=["Lundstram", 1],
-    GK=1,
-    MID=4
+    budget=83,
+    teamsize=11
     )
