@@ -14,7 +14,7 @@ In optimiser_B, the teamsize is always 15, however you can specify a bench_stren
 ## Usage
 1. Clone this repository - `git clone "https://github.com/ChrisMusson/FPL_Optimiser"`
 2. Install requirements from txt file - `pip install -r requirements.txt`
-3. Run `get_data.py`. This will create a `players_data.csv` file containing information about every player in FPL this season, along with their points from last season. If you want to optimise something other than points from last season, then you can replace this final column with something else - the optimiser will still run so long as the csv file stays in the same format and the column headers remain unchanged.
+3. Run `get_data.py`. This will create a `players_data.csv` file containing information about every player in FPL this season, along with their points so far this season. If you want to optimise something other than points so far, then you can replace this final column with something else - the optimiser will still run so long as the csv file stays in the same format and the column headers remain unchanged.
 4. Open `optimiser_A.py` or `optimiser_B.py` and change the arguments to the optimise function (a list of all available arguments can be found in the function's docstring). Run the program, and a dataframe containing the optimised lineup will be printed to the command line.
 
 ## Examples
