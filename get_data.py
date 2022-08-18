@@ -3,57 +3,44 @@ from json import loads
 from csv import writer
 
 
-def team_converter(team_id):
-    '''Converts a team's ID to their actual name'''
-    team_map = {
-        1: "Arsenal",
-        2: "Aston Villa",
-        3: "Brighton",
-        4: "Burnley",
-        5: "Chelsea",
-        6: "Crystal Palace",
-        7: "Everton",
-        8: "Fulham",
-        9: "Leicester",
-        10: "Leeds",
-        11: "Liverpool",
-        12: "Man City",
-        13: "Man Utd",
-        14: "Newcastle",
-        15: "Sheffield Utd",
-        16: "Southampton",
-        17: "Spurs",
-        18: "West Brom",
-        19: "West Ham",
-        20: "Wolves",
-        None: None
-    }
-    return team_map[team_id]
+class Team_sorter:
+    def team_mapping(self, team_data):
+        self.team_map = {}
+        for team in team_data:
+            self.team_map[team['id']] = team['name']
+    def team_converter(self, team_id):
+        '''Converts a team's ID to their actual name'''
+        return  self.team_map[team_id]
 
-
-def position_converter(position):
-    '''Converts a player's element_type to their actual position'''
-    position_map = {
-        1: "Goalkeeper",
-        2: "Defender",
-        3: "Midfielder",
-        4: "Forward"
-    }
-    return position_map[position]
+class Position_sorter:
+    def position_mapping(self, position_data):
+        self.position_map = {}
+        for position in position_data:
+            self.position_map[position['id']] = position['plural_name']
+    
+    def position_converter(self, position):
+        '''Converts a player's element_type to their actual position'''
+        return self.position_map[position]
 
 
 def main():
     all_data = loads(urlopen("https://fantasy.premierleague.com/api/bootstrap-static/").read())
     players = all_data["elements"]
-
+    #Dynamically updating teams each year.
+    t = Team_sorter()
+    t.team_mapping(all_data['teams'])
+    #Code to get map positions dynamically.
+    p = Position_sorter()
+    p.position_mapping(all_data['element_types'])
     important_data = [
         [
             x["id"],
-            team_converter(x["team"]),
-            position_converter(x["element_type"])[0],
+            t.team_converter(x["team"]),
+            p.position_converter(x["element_type"])[0],
             x["web_name"],
             x["now_cost"] / 10,
-            x["total_points"]
+            x["total_points"],
+            
         ]
         for x in players
     ]
